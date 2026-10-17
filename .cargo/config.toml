@@ -3,7 +3,15 @@
 [target.wasm32-unknown-unknown]
 rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
 
-# Optional: faster native links. Needs `clang` + `lld` (or `mold`) on PATH.
+# Native linker. Since Rust 1.90 `lld` is the default linker on this target, so
+# nothing is needed here. Uncomment to try `mold` instead (add `mold` to the dev
+# shell); it typically links a Bevy binary ~2x faster than lld.
 # [target.x86_64-unknown-linux-gnu]
 # linker = "clang"
-# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+# Fast native iteration: builds Bevy as a shared library so relinking after a
+# code change is much faster. See the `dev` feature in Cargo.toml. Native only —
+# do not use for wasm or release builds.
+[alias]
+dev = "run --features dev"

@@ -13,14 +13,41 @@ features = ["2d", "ui", "audio"]
 console_error_panic_hook = "0.1"
 tracing-wasm = "0.2"
 
-# Fast iteration on the game code, optimized dependencies.
+[features]
+# Native-only dev accelerator: builds Bevy as a shared library, so relinking
+# after a code change is far cheaper (`cargo dev`, or `cargo run --features dev`).
+# Never enable this for wasm, release, or shipping — it requires shipping
+# libbevy_dylib alongside the binary and blocks some optimizations.
+dev = ["bevy/dynamic_linking"]
+
+# Fast iteration on the game code, optimized dependencies — Bevy's recommended
+# dev setup: your own crates compile quickly while the engine runs at a usable
+# framerate.
 [profile.dev]
 opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
 
-# Small/fast browser bundle: `cargo`/trunk --profile wasm-release
+# Build scripts and proc-macros are code-generated even by `cargo check` (normal
+# dependencies are only type-checked), so they dominate compile time. Note Cargo's
+# override precedence is `package.<name>` > `package."*"` > `build-override` >
+# `[profile.dev]`, resolved per field. So with `package."*"` set above, proc-macros
+# still get opt-level 3 and only `debug = false` from here takes effect.
+#
+# Measured cold `cargo check` here (fresh target dir):
+#   build-override only           ~63 s
+#   + package."*" opt-level = 3   ~151 s   (warm/incremental ~0.3 s either way)
+# Keep `package."*"` for a smooth dev runtime; drop it if cold checks matter more.
+[profile.dev.build-override]
+opt-level = 0
+debug = false
+
+# Small/fast browser bundle. Note Trunk has no `--profile` flag: use
+#   trunk build --release --cargo-profile wasm-release
+# (`--release` is still needed so Trunk runs wasm-opt and its release pipelines;
+#  `--cargo-profile` replaces the cargo `--release` arg with this profile.)
+# See the `web-build` script in devenv.nix.
 [profile.wasm-release]
 inherits = "release"
 opt-level = "s"
