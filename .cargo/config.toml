@@ -1,0 +1,9 @@
+# getrandom has no default backend on wasm32-unknown-unknown; opt into the web
+# (JS) backend so crates pulling it in transitively (rand/uuid/ahash/...) compile.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
+
+# Optional: faster native links. Needs `clang` + `lld` (or `mold`) on PATH.
+# [target.x86_64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
